@@ -1,0 +1,167 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Memory Card Game (React)</title>
+        <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+        <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+        <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                text-align: center;
+                background: url('game.jpg') no-repeat center center/cover;
+                color: white;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+            .game-container {
+                background: rgba(0, 0, 0, 0.7);
+                padding: 20px;
+                border-radius: 10px;
+            }
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(4, 100px);
+                gap: 10px;
+                justify-content: center;
+                margin-top: 20px;
+            }
+            .card {
+                width: 100px;
+                height: 100px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 2rem;
+                background: #eee;
+                color: black;
+                cursor: pointer;
+                border-radius: 10px;
+                transition: transform 0.3s ease-in-out;
+            }
+            .card.flipped {
+                background: lightgreen;
+                transform: rotateY(180deg);
+            }
+            .message {
+                font-size: 1.5rem;
+                margin-top: 20px;
+                font-weight: bold;
+                display: none;
+            }
+            button {
+                background: #28a745;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                margin-top: 50px;
+                font-size: 35px;
+                cursor: pointer;
+                border-radius: 5px;
+            }
+            button:hover {
+                background: #218838;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="root"></div>
+
+        <script type="text/babel">
+            function MemoryGame() {
+                const cardImages = ["🍎", "🍌", "🍊", "🍇", "🍓", "🍉"];
+                const [cards, setCards] = React.useState([]);
+                const [firstCard, setFirstCard] = React.useState(null);
+                const [secondCard, setSecondCard] = React.useState(null);
+                const [disableBoard, setDisableBoard] = React.useState(false);
+                const [winMessage, setWinMessage] = React.useState("");
+
+                React.useEffect(() => {
+                    startGame();
+                }, []);
+
+                function shuffleCards() {
+                    return [...cardImages, ...cardImages]
+                        .sort(() => Math.random() - 0.5)
+                        .map((emoji, index) => ({ id: index, emoji, matched: false }));
+                }
+
+                function startGame() {
+                    setCards(shuffleCards());
+                    setFirstCard(null);
+                    setSecondCard(null);
+                    setDisableBoard(false);
+                    setWinMessage("");
+                }
+
+                function flipCard(index) {
+                    if (disableBoard || cards[index].matched || cards[index].flipped) return;
+                    
+                    const newCards = [...cards];
+                    newCards[index] = { ...newCards[index], flipped: true };
+                    setCards(newCards);
+
+                    if (!firstCard) {
+                        setFirstCard({ index, emoji: newCards[index].emoji });
+                    } else {
+                        setSecondCard({ index, emoji: newCards[index].emoji });
+                        checkForMatch(newCards, firstCard.index, index);
+                    }
+                }
+
+                function checkForMatch(newCards, firstIndex, secondIndex) {
+                    setDisableBoard(true);
+                    if (newCards[firstIndex].emoji === newCards[secondIndex].emoji) {
+                        newCards[firstIndex].matched = true;
+                        newCards[secondIndex].matched = true;
+                        setCards(newCards);
+                        setDisableBoard(false);
+                        checkWin(newCards);
+                    } else {
+                        setTimeout(() => {
+                            newCards[firstIndex].flipped = false;
+                            newCards[secondIndex].flipped = false;
+                            setCards([...newCards]);
+                            setDisableBoard(false);
+                        }, 1000);
+                    }
+                    setFirstCard(null);
+                    setSecondCard(null);
+                }
+
+                function checkWin(newCards) {
+                    if (newCards.every(card => card.matched)) {
+                        setWinMessage("🔥 You did it! Awesome job! 🔥");
+                    }
+                }
+
+                return (
+                    <div className="game-container">
+                        <div className="grid">
+                            {cards.map((card, index) => (
+                                <div 
+                                    key={index} 
+                                    className={`card ${card.flipped ? "flipped" : ""}`} 
+                                    onClick={() => flipCard(index)}
+                                >
+                                    {card.flipped || card.matched ? card.emoji : "❓"}
+                                </div>
+                            ))}
+                        </div>
+                        <p className="message" style={{ display: winMessage ? "block" : "none" }}>
+                            {winMessage}
+                        </p>
+                        <button onClick={startGame}>New Game</button>
+                    </div>
+                );
+            }
+
+            ReactDOM.createRoot(document.getElementById("root")).render(<MemoryGame />);
+        </script>
+    </body>
+    </html>
